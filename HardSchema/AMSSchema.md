@@ -20,7 +20,7 @@ table : user {
 table : doctor {
     user_id : FK from users table PK;
     specialization : String;
-    experience : dynamic value;
+    experience : we will take the starting date and calculate;
 }
 
 table : permissions {
