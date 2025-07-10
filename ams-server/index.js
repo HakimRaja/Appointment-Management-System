@@ -2,7 +2,7 @@ require('dotenv').config();
 const sequelize = require('./config/dbConfig.js')
 
 //Connect to database
-sequelize.sync({alter : true})
+sequelize.sync()
 .then(()=>{
     console.log(`Database is connected at post ${process.env.DB_PORT}`)
 })
