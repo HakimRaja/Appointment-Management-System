@@ -1,3 +1,3 @@
-backend/node_modules
-backend/package-lock.json
-backend/.env
+ams-server/node_modules
+ams-server/package-lock.json
+ams-server/.env
