@@ -56,7 +56,11 @@ module.exports = (sequelize, DataTypes) => {
       type : DataTypes.DATE,
       allowNull : false
   },
-  role : {type : DataTypes.ENUM('doctor','patient','admin') , allowNull : false}
+  role : {type : DataTypes.ENUM('doctor','patient','admin') , allowNull : false},
+  isValidated : {
+    type : DataTypes.BOOLEAN,
+    allowNull : false
+  },
   }, {
     sequelize,
     modelName: 'User',

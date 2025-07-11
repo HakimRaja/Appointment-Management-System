@@ -28,6 +28,10 @@ module.exports = {
         type : Sequelize.ENUM('doctor','patient','admin'),
         allowNull : false
       },
+      isValidated : {
+        type : Sequelize.BOOLEAN,
+        allowNull : false
+      },
       createdAt: {
         allowNull: false,
         type: Sequelize.DATE
