@@ -1,5 +1,5 @@
 require('dotenv').config();
-const sequelize = require('./config/dbConfig.js')
+const db = require('./models/associateModels.js')
 
 //Connect to database
 // sequelize.sync()
@@ -10,7 +10,7 @@ const sequelize = require('./config/dbConfig.js')
 //     console.log(err)
 // })
 
-sequelize.authenticate()
+db.sequelize.authenticate()
 .then(()=>{
     console.log(`Database is connected at post ${process.env.DB_PORT}`)
 })
