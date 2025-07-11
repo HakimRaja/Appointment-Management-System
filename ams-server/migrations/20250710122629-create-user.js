@@ -10,7 +10,8 @@ module.exports = {
         defaultValue: Sequelize.UUIDV4
       },
       name: {
-        type: Sequelize.STRING
+        type: Sequelize.STRING,
+        allowNull : false,
       },
       email: {
         type: Sequelize.STRING,
@@ -28,7 +29,7 @@ module.exports = {
         type : Sequelize.ENUM('doctor','patient','admin'),
         allowNull : false
       },
-      isValidated : {
+      is_validated : {
         type : Sequelize.BOOLEAN,
         allowNull : false
       },

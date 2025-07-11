@@ -57,7 +57,7 @@ module.exports = (sequelize, DataTypes) => {
       allowNull : false
   },
   role : {type : DataTypes.ENUM('doctor','patient','admin') , allowNull : false},
-  isValidated : {
+  is_validated : {
     type : DataTypes.BOOLEAN,
     allowNull : false
   },
