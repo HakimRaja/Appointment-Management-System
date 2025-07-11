@@ -36,7 +36,7 @@ module.exports = {
         allowNull: false,
       },
       date : {
-        type : DataTypes.DATE,
+        type : Sequelize.DATE,
         allowNull : false
       },
       description: {

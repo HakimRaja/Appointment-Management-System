@@ -5,7 +5,7 @@ module.exports = {
     await queryInterface.createTable('patient_reviews', {
       appointment_id : {
       
-        type: DataTypes.UUID,
+        type: Sequelize.UUID,
         primaryKey: true,
         references : {
           model : 'appointments',
@@ -16,11 +16,11 @@ module.exports = {
         allowNull : false
     },
     stars : {
-      type : DataTypes.ENUM(1,2,3,4,5),
-      allowNull : false
+      type : DataTypes.ENUM('1','2','3','4','5'),
+      // allowNull : false
     },
     review : {
-      type : DataTypes.STRING,
+      type : Sequelize.STRING,
       allowNull : false
     },
       createdAt: {
