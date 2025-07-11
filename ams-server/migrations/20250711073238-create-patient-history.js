@@ -12,8 +12,13 @@ module.exports = {
       },
       user_id : {
         type : Sequelize.UUID,
-        defaultValue : Sequelize.UUIDV4,
-        allowNull : false
+        references : {
+          model : 'users',
+          key : 'user_id'
+        },
+        allowNull : false,
+        onUpdate : 'CASCADE',
+        onDelete : 'CASCADE'
       },
       history: {type : Sequelize.STRING , 
         allowNull : false
