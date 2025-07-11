@@ -14,12 +14,21 @@ module.exports = (sequelize, DataTypes) => {
     }
   }
   permission.init({
-    permission_id: DataTypes.INTEGER,
-    permission: DataTypes.STRING,
-    role: DataTypes.STRING
+    permission_id: {type : DataTypes.UUID,
+      allowNull : false,
+      unique : true,
+      primaryKey : true //also foreign key from users table 
+    },
+    permission: {type : DataTypes.STRING,
+      allowNull :false
+    },
+    role: {type : DataTypes.ENUM('doctor','patient','admin') , allowNull : false}
   }, {
     sequelize,
     modelName: 'permission',
+    tableName: 'permission',
+    timestamps : true,
+    paranoid : true
   });
   return permission;
 };
