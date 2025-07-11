@@ -3,22 +3,42 @@ const {
   Model
 } = require('sequelize');
 module.exports = (sequelize, DataTypes) => {
-  class user extends Model {
+  class User extends Model {
     /**
      * Helper method for defining associations.
      * This method is not a part of Sequelize lifecycle.
      * The `models/index` file will call this method automatically.
      */
     static associate(models) {
-      // define association here
+      User.hasMany(models.Phone , {
+        foreignKey : 'user_id',
+        as : 'phones'
+      });
+      User.hasOne(models.Doctor , {
+        foreignKey : 'user_id',
+        as : 'doctor'
+      });
+      User.hasMany(models.PatientHistory , {
+        foreignKey : 'user_id',
+        as : 'patient_histories'
+      });
+      User.hasMany(models.Appointment , {
+        foreignKey : 'user_id1',
+        as : 'appointment_as_patient'
+      });
+      User.hasMany(models.Appointment , {
+        foreignKey : 'user_id2',
+        as : 'appointment_as_doctor'
+      })
     }
   }
-  user.init({
+  User.init({
     user_id : {
       type : DataTypes.UUID,
       unique : true,
       allowNull : false,
-      primaryKey : true
+      primaryKey : true,
+      defaultValue: DataTypes.UUIDV4,
   },
     name: {type : DataTypes.STRING,
       allowNull : false
@@ -32,17 +52,21 @@ module.exports = (sequelize, DataTypes) => {
       type : DataTypes.STRING,
       allowNull : false
   },
-    age: {
-      type : DataTypes.INTEGER,
+    dob: {
+      type : DataTypes.DATE,
       allowNull : false
   },
-  role : {type : DataTypes.ENUM('doctor','patient','admin') , allowNull : false}
+  role : {type : DataTypes.ENUM('doctor','patient','admin') , allowNull : false},
+  is_validated : {
+    type : DataTypes.BOOLEAN,
+    allowNull : false
+  },
   }, {
     sequelize,
-    modelName: 'user',
-    tableName : 'user',
+    modelName: 'User',
+    tableName : 'users',
     timestamps : true,
     paranoid : true
   });
-  return user;
+  return User;
 };
