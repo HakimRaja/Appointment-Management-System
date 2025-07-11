@@ -3,28 +3,44 @@
 module.exports = {
   async up(queryInterface, Sequelize) {
     await queryInterface.createTable('availabilities', {
-      id: {
+      availability_id: {
         allowNull: false,
-        autoIncrement: true,
         primaryKey: true,
-        type: Sequelize.INTEGER
-      },
-      availabilty_id: {
-        type: Sequelize.INTEGER
+        type: Sequelize.UUID,
+        defaultValue: Sequelize.UUIDV4,
       },
       user_id: {
-        type: Sequelize.INTEGER
+        type: Sequelize.UUID,
+        allowNull: false,
+        references: {
+          model: 'doctors',  
+          key: 'user_id',
+        },
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
       },
-      mon: {
-        type: Sequelize.STRING
+      day: {
+        type: Sequelize.ENUM('monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'),
+        allowNull: false,
+      },
+      start_timeSlot: {
+        type: Sequelize.TIME,
+        allowNull: false,
+      },
+      end_timeSlot: {
+        type: Sequelize.TIME,
+        allowNull: false,
       },
       createdAt: {
         allowNull: false,
-        type: Sequelize.DATE
+        type: Sequelize.DATE,
       },
       updatedAt: {
         allowNull: false,
-        type: Sequelize.DATE
+        type: Sequelize.DATE,
+      },
+      deletedAt: { // For soft deletes
+        type: Sequelize.DATE,
       }
     });
   },

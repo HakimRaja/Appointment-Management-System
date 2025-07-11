@@ -2,11 +2,12 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('permission', {
+    await queryInterface.createTable('permissions', {
       permission_id: {
         allowNull: false,
         primaryKey: true,
-        type: Sequelize.UUID
+        type: Sequelize.UUID,
+        defaultValue: Sequelize.UUIDV4,
       },
       permission: {
         type: Sequelize.STRING,
@@ -30,6 +31,6 @@ module.exports = {
     });
   },
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('permission');
+    await queryInterface.dropTable('permissions');
   }
 };

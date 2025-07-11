@@ -3,18 +3,26 @@
 module.exports = {
   async up(queryInterface, Sequelize) {
     await queryInterface.createTable('patient_reviews', {
-      id: {
-        allowNull: false,
-        autoIncrement: true,
+      appointment_id : {
+      
+        type: DataTypes.UUID,
         primaryKey: true,
-        type: Sequelize.INTEGER
-      },
-      appointment_id: {
-        type: Sequelize.INTEGER
-      },
-      review: {
-        type: Sequelize.STRING
-      },
+        references : {
+          model : 'appointments',
+          key : 'appointment_id'
+        },
+        onDelete : 'CASCADE',
+        onUpdate : 'CASCADE',
+        allowNull : false
+    },
+    stars : {
+      type : DataTypes.ENUM(1,2,3,4,5),
+      allowNull : false
+    },
+    review : {
+      type : DataTypes.STRING,
+      allowNull : false
+    },
       createdAt: {
         allowNull: false,
         type: Sequelize.DATE
@@ -22,6 +30,9 @@ module.exports = {
       updatedAt: {
         allowNull: false,
         type: Sequelize.DATE
+      },
+      deletedAt : {
+        type : Sequelize.DATE
       }
     });
   },

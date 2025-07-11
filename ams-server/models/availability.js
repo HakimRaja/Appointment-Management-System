@@ -3,7 +3,7 @@ const {
   Model
 } = require('sequelize');
 module.exports = (sequelize, DataTypes) => {
-  class availability extends Model {
+  class Availability extends Model {
     /**
      * Helper method for defining associations.
      * This method is not a part of Sequelize lifecycle.
@@ -11,15 +11,49 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
+      Availability.belongsTo(models.Doctor , {
+        foreignKey : 'user_id',
+        as : 'doctor'
+      })
     }
   }
-  availability.init({
-    availabilty_id: DataTypes.INTEGER,
-    user_id: DataTypes.INTEGER,
-    mon: DataTypes.STRING
+  Availability.init({
+    availabilty_id: {
+      type: DataTypes.UUID,
+      defaultValue: DataTypes.UUIDV4,
+      primaryKey: true,
+      allowNull: false
+    },
+    user_id: {
+      type: DataTypes.UUID,
+      allowNull: false
+    },
+    day: {
+      type: DataTypes.ENUM(
+        'monday',
+        'tuesday',
+        'wednesday',
+        'thursday',
+        'friday',
+        'saturday',
+        'sunday'
+      ),
+      allowNull: false
+    },
+    start_timeSlot: {
+      type: DataTypes.TIME,
+      allowNull: false
+    },
+    end_timeSlot: {
+      type: DataTypes.TIME,
+      allowNull: false
+    },
   }, {
     sequelize,
-    modelName: 'availability',
+    modelName: 'Availability',
+    tableName: 'availabilities',
+    timestamps:true,
+    paranoid:true
   });
-  return availability;
+  return Availability;
 };
