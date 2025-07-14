@@ -96,5 +96,15 @@ const logInUser = async(req,res) =>{
             res.status(500).json({ error: error.message });
         }
         }
-        
-module.exports = {logInUser , signUpUser};
+    
+const getSpecializations = async(req,res)=>{
+    try {
+        const specializations = await sequelize.query('SELECT specialization_id,title from specializations',{
+            type : sequelize.QueryTypes.SELECT
+        })
+        return res.status(200).send({specializations : specializations})
+    } catch (error) {
+        return res.status(500).json({ error: error.message });
+    }
+}
+module.exports = {logInUser , signUpUser,getSpecializations};
