@@ -1,26 +1,72 @@
 const sequelize = require('../config/dbConfig.js');
-const {hashPassword,comparePassword,generateToken ,getNotValidatedArray} = require('../services/authServices.js')
+const {hashPassword,comparePassword,generateToken ,getNotValidatedArray, checkPhoneNumber} = require('../services/authServices.js')
 const {v4 : uuidv4} = require('uuid');
 
 const signUpUser = async(req,res)=>{
     try {
-        const {name , email , password,role,dob} = req.body;
+        const {name , email , password,role,dob,phone} = req.body;
         const [existingUser] = await sequelize.query('SELECT * FROM "users" WHERE email = :email',{
             replacements :{email},
             type : sequelize.QueryTypes.SELECT
         });
+        
         // console.log(existingUser.user_id);
         if (existingUser) {
             return res.status(400).send({message : 'user already exists'})
         }
+        if (!checkPhoneNumber(phone)) {
+            return res.status(400).send({message : 'please provide correct phone number.'})
+        }
+        //now based on role we will be saving information
         const hashedPass = await hashPassword(password);
         const userId = uuidv4();
         const isValidated = false;
-        const [newUser] = await sequelize.query('INSERT INTO users(user_id,name,email,password,dob,role,is_validated,"createdAt","updatedAt") VALUES(:user_id,:name,:email, :password,:dob,:role,:is_validated, NOW(), NOW()) RETURNING user_id',{
-            replacements : {user_id:userId,name,email , password : hashedPass,dob,role,is_validated : isValidated},
+        var newUser;
+        if(role == 'admin'){
+            [newUser] = await sequelize.query('INSERT INTO users(user_id,name,email,password,dob,role,is_validated,"createdAt","updatedAt") VALUES(:user_id,:name,:email, :password,:dob,:role,:is_validated, NOW(), NOW()) RETURNING user_id',{
+                replacements : {user_id:userId,name,email , password : hashedPass,dob,role,is_validated : isValidated},
+                type : sequelize.QueryTypes.INSERT
+            });//returns [rows , metadata]
+            
+        }
+        else if(role == 'doctor'){
+            if (!req.body.specialization || !req.body.experience) {
+                res.status(400).json({ message: 'Please provide complete information!' });
+            }
+            [newUser] = await sequelize.query('INSERT INTO users(user_id,name,email,password,dob,role,is_validated,"createdAt","updatedAt") VALUES(:user_id,:name,:email, :password,:dob,:role,:is_validated, NOW(), NOW()) RETURNING user_id',{
+                replacements : {user_id:userId,name,email , password : hashedPass,dob,role,is_validated : isValidated},
+                type : sequelize.QueryTypes.INSERT
+            });//returns [rows , metadata]
+            [newDoctor] = await sequelize.query('INSERT INTO doctors(user_id,specialization,experience,"createdAt","updatedAt") VALUES(:user_id,:specialization,:experience, NOW(), NOW()) RETURNING user_id',{
+                replacements : {user_id:userId,specialization : req.body.specialization,experience : req.body.experience},
+                type : sequelize.QueryTypes.INSERT
+            });//returns [rows , metadata]
+            
+        }
+        else if(role == 'patient'){
+            if (req.body.history) {
+                [newUser] = await sequelize.query('INSERT INTO users(user_id,name,email,password,dob,role,is_validated,"createdAt","updatedAt") VALUES(:user_id,:name,:email, :password,:dob,:role,:is_validated, NOW(), NOW()) RETURNING user_id',{
+                    replacements : {user_id:userId,name,email , password : hashedPass,dob,role,is_validated : isValidated},
+                    type : sequelize.QueryTypes.INSERT
+                });//returns [rows , metadata]
+                const patientHistoryId = uuidv4();
+                const [newPatient] = await sequelize.query('INSERT INTO patient_histories(patient_history_id,user_id,history,"createdAt","updatedAt") VALUES(:patient_history_id,:user_id,:history, NOW(), NOW()) RETURNING patient_history_id',{
+                    replacements : {patient_history_id : patientHistoryId,user_id:userId,history : req.body.history},
+                    type : sequelize.QueryTypes.INSERT
+                });//returns [rows , metadata]
+                
+            }
+            else{
+                return res.status(400).send({message : 'please provide patient history'})
+            }
+        }
+        const phoneId = uuidv4();
+        const [newPhone] = await sequelize.query('INSERT INTO phones(phone_id,user_id,phone_number,"createdAt","updatedAt") VALUES(:phoneId,:userId,:phone,NOW(),NOW()) RETURNING phone_id', {
+            replacements : {phoneId,userId,phone},
             type : sequelize.QueryTypes.INSERT
-        });//returns [rows , metadata]
-        return res.status(201).send({message : `user Created with user_id : ${newUser[0].user_id}`})
+        })
+        return res.status(201).send({message : `${role} Created with user_id : ${newUser[0].user_id}`,userId : userId})
+
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
@@ -45,7 +91,7 @@ const logInUser = async(req,res) =>{
                 return res.status(400).send({message : 'You are not allowed the access the resources!'});
             }
             const token = generateToken({user_id : user.user_id , email : user.email ,role : user.role})
-            res.status(202).json({token : token});
+            res.status(202).json({token : token , message : `hello ${user.name}`,userId : user.user_id,email : user.email});
         } catch (error) {
             res.status(500).json({ error: error.message });
         }
