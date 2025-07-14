@@ -1,6 +1,7 @@
 const Sequelize = require('sequelize');
 const sequelize = require('../config/dbConfig');
 
+const Specialization = require('./specialization.js')(sequelize,Sequelize.DataTypes);
 const PatientReview = require('./patient_review.js')(sequelize,Sequelize.DataTypes);
 const CheckUpDetail = require('./check_up_detail.js')(sequelize,Sequelize.DataTypes);
 const Payment = require('./payment.js')(sequelize,Sequelize.DataTypes);
@@ -14,7 +15,7 @@ const Phone = require('./phone.js')(sequelize,Sequelize.DataTypes);
 
 
 const models = {
-    User , Phone ,Doctor , Permission , PatientHistory , Availability , Appointment , CheckUpDetail , Payment , PatientReview
+  Specialization,User , Phone ,Doctor , Permission , PatientHistory , Availability , Appointment , CheckUpDetail , Payment , PatientReview
 };
 
 Object.values(models).forEach((model) => {

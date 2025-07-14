@@ -14,6 +14,10 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey : 'user_id',
         as : 'user'
       });
+      Doctor.belongsTo(models.Specialization , {
+        foreignKey : 'specialization_id',
+        as : 'specialization'
+      });
       Doctor.hasMany(models.Availability, {
         foreignKey : 'user_id',
         as : 'availabilties'
@@ -26,7 +30,7 @@ module.exports = (sequelize, DataTypes) => {
       unique : true,
       primaryKey : true //also foreign key from users table 
     },
-    specialization:{type : DataTypes.STRING,
+    specialization_id:{type : DataTypes.STRING,
       allowNull : false,
     },
     experience: {type : DataTypes.DATE,
