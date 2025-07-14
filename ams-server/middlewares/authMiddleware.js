@@ -4,20 +4,20 @@ const { getNotValidatedArray } = require("../services/authServices");
 
 const checkSignUpBodyMiddleWare = (req,res,next) =>{
     try {
-        const {name , email , password,role,dob} = req.body;
-        if (!req.body || !name || !email || !password || !role || !dob) {
+        const {name , email , password,role,dob,phone} = req.body;
+        if (!req.body || !name || !email || !password || !role || !dob ||!phone) {
             return res.status(400).send('Please provide complete details')
         }
         if(!validator.isEmail(email))
-            return res.status(400).json("Valid Email required!");
+            return res.status(400).json({message : "Valid Email required!"});
         if(!(password.length > 7))
-            return res.status(400).json("Strong Password required!");
+            return res.status(400).json({message : "Strong Password required!"});
         if (!['admin', 'doctor', 'patient'].includes(req.body.role)) {
             return res.status(400).send("Invalid role");
           }
         next();
     } catch (error) {
-        return res.status(400).send('Please provide complete details')
+        return res.status(400).send({message : 'Please provide complete details'})
     }
     
 }
@@ -29,11 +29,11 @@ const checkLogInBodyMiddleWare = (req,res,next) =>{
         }
         if(!validator.isEmail(email))
             return res.status(400).json("Valid Email required!");
-        if(!(password.length > 7))
-            return res.status(400).json("Strong Password required!");
+        // if(!(password.length > 7))
+        //     return res.status(400).json("Strong Password required!");
         next();
     } catch (error) {
-        return res.status(400).send('Please provide complete details')
+        return res.status(400).send({message :'Please provide complete details'})
     }
     
 }
