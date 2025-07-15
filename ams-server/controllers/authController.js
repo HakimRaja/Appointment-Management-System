@@ -3,6 +3,7 @@ const {hashPassword,comparePassword,generateToken ,getNotValidatedArray, checkPh
 const {v4 : uuidv4} = require('uuid');
 
 const signUpUser = async(req,res)=>{
+    // console.log('idher')
     try {
         const {name , email , password,role,dob,phone} = req.body;
         const [existingUser] = await sequelize.query('SELECT * FROM "users" WHERE email = :email',{
@@ -30,14 +31,15 @@ const signUpUser = async(req,res)=>{
             
         }
         else if(role == 'doctor'){
+
             if (!req.body.specialization_id || !req.body.experience) {
-                res.status(400).json({ message: 'Please provide complete information!' });
+                return res.status(400).json({ message: 'Please provide complete information!' });
             }
             [newUser] = await sequelize.query('INSERT INTO users(user_id,name,email,password,dob,role,is_validated,"createdAt","updatedAt") VALUES(:user_id,:name,:email, :password,:dob,:role,:is_validated, NOW(), NOW()) RETURNING user_id',{
                 replacements : {user_id:userId,name,email , password : hashedPass,dob,role,is_validated : isValidated},
                 type : sequelize.QueryTypes.INSERT
             });//returns [rows , metadata]
-            [newDoctor] = await sequelize.query('INSERT INTO doctors(user_id,specialization_id,experience,"createdAt","updatedAt") VALUES(:user_id,:specialization,:experience, NOW(), NOW()) RETURNING user_id',{
+            [newDoctor] = await sequelize.query('INSERT INTO doctors(user_id,specialization_id,experience,"createdAt","updatedAt") VALUES(:user_id,:specialization_id,:experience, NOW(), NOW()) RETURNING user_id',{
                 replacements : {user_id:userId,specialization_id : req.body.specialization_id,experience : req.body.experience},
                 type : sequelize.QueryTypes.INSERT
             });//returns [rows , metadata]
