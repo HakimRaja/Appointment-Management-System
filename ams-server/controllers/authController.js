@@ -20,7 +20,7 @@ const signUpUser = async(req,res)=>{
         //now based on role we will be saving information
         const hashedPass = await hashPassword(password);
         const userId = uuidv4();
-        const isValidated = false;
+        const isValidated = true;
         var newUser;
         if(role == 'admin'){
             [newUser] = await sequelize.query('INSERT INTO users(user_id,name,email,password,dob,role,is_validated,"createdAt","updatedAt") VALUES(:user_id,:name,:email, :password,:dob,:role,:is_validated, NOW(), NOW()) RETURNING user_id',{
@@ -65,7 +65,8 @@ const signUpUser = async(req,res)=>{
             replacements : {phoneId,userId,phone},
             type : sequelize.QueryTypes.INSERT
         })
-        return res.status(201).send({message : `${role} Created with user_id : ${newUser[0].user_id}`,userId : userId})
+        const token = generateToken({user_id : userId , email : email ,role : role})
+        return res.status(201).send({userId : userId ,email:email ,token : token,name : name,role :role })
 
     } catch (error) {
         res.status(500).json({ error: error.message });
