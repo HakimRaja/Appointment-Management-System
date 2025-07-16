@@ -3,16 +3,30 @@
 module.exports = {
   async up(queryInterface, Sequelize) {
     await queryInterface.createTable('doctors_specializations', {
-      id: {
-        allowNull: false,
-        primaryKey: true,
-        type: Sequelize.UUID
+      id : {
+        type : Sequelize.UUID,
+        primaryKey : true,
+        defaultValue : Sequelize.UUID,
+        allowNull : false,
+        unique : true
       },
       user_id: {
-        type: Sequelize.UUID
+        type : Sequelize.UUID,
+        allowNull : false,
+        references : {
+          model : 'doctors',
+          key : 'user_id'
+        },
+        onDelete : 'CASCADE'
       },
       specialization_id: {
-        type: Sequelize.UUID
+        type : Sequelize.UUID,
+        allowNull : false,
+        references : {
+          model : 'specializations',
+          key : 'specialization_id'
+        },
+        onDelete : 'CASCADE'
       },
       createdAt: {
         allowNull: false,

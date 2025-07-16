@@ -15,15 +15,6 @@ module.exports = {
         onUpdate : 'CASCADE',
         onDelete: 'CASCADE'
       },
-      specialization_id: {
-        type: Sequelize.UUID,
-        references :{
-          model : 'specializations',
-          key : 'specialization_id',  
-        },
-        onUpdate : 'CASCADE',
-        onDelete: 'CASCADE'
-      },
       experience: {
         type: Sequelize.DATE
       },
