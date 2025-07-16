@@ -32,4 +32,11 @@ const getNotValidatedArray =async () =>{
       }
 }
 
-module.exports = {hashPassword , comparePassword , generateToken, getNotValidatedArray};
+const checkPhoneNumber = (number) =>{
+  if (number.length != 11 || isNaN(number)) {
+    return false;
+  }
+  return true;
+}
+
+module.exports = {hashPassword , comparePassword , generateToken, getNotValidatedArray,checkPhoneNumber};

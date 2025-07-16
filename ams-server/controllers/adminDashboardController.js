@@ -17,13 +17,13 @@ const addNonValidatedUser = async(req,res) =>{
         if(arr.includes(user_email)){
             return res.status(400).send({message : 'User is already not validated!'});
         }
-        const updateUser = await sequelize.query('UPDATE users set is_validated=:value WHERE email=:email',{
+        const updateUser = await sequelize.query('UPDATE users set is_validated=:value,updatedAt=NOW() WHERE email=:email',{
             replacements : {value : false , email : user_email},
             type : sequelize.QueryTypes.UPDATE
         });
         res.status(202).send({invalidate_users : arr.push(user_email)});
     } catch (error) {
-        res.status(400).send({error : error.message});
+        res.status(400).send({message : error.message});
     }
 }
 const RemoveNonValidatedUser = async(req,res) =>{
@@ -33,13 +33,13 @@ const RemoveNonValidatedUser = async(req,res) =>{
         if(!arr.includes(user_email)){
             return res.status(400).send({message : 'User is already validated!'});
         }
-        const updateUser = await sequelize.query('UPDATE users set is_validated=:value WHERE email=:email',{
+        const updateUser = await sequelize.query('UPDATE users set is_validated=:value,updatedAt=NOW() WHERE email=:email',{
             replacements : {value : true , email : user_email},
             type : sequelize.QueryTypes.UPDATE
         });
         res.status(202).send({invalidate_users : arr.push(arr.splice(arr.indexOf(user_email),1))});
     } catch (error) {
-        res.status(400).send({error : error.message});
+        res.status(400).send({message : error.message});
     }
 }
 

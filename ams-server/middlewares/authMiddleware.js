@@ -1,42 +1,7 @@
-const validator = require("validator");
 const jwt = require('jsonwebtoken');
 const { getNotValidatedArray } = require("../services/authServices");
 
-const checkSignUpBodyMiddleWare = (req,res,next) =>{
-    try {
-        const {name , email , password,role,dob} = req.body;
-        if (!req.body || !name || !email || !password || !role || !dob) {
-            return res.status(400).send('Please provide complete details')
-        }
-        if(!validator.isEmail(email))
-            return res.status(400).json("Valid Email required!");
-        if(!(password.length > 7))
-            return res.status(400).json("Strong Password required!");
-        if (!['admin', 'doctor', 'patient'].includes(req.body.role)) {
-            return res.status(400).send("Invalid role");
-          }
-        next();
-    } catch (error) {
-        return res.status(400).send('Please provide complete details')
-    }
-    
-}
-const checkLogInBodyMiddleWare = (req,res,next) =>{
-    try {
-        const {email , password} = req.body;
-        if (!req.body ||!email || !password ) {
-            return res.status(400).send('Please provide complete details')
-        }
-        if(!validator.isEmail(email))
-            return res.status(400).json("Valid Email required!");
-        if(!(password.length > 7))
-            return res.status(400).json("Strong Password required!");
-        next();
-    } catch (error) {
-        return res.status(400).send('Please provide complete details')
-    }
-    
-}
+
 const verify =async (req,res,next) =>{
     const authHeader  = req.headers.authorization;
     // console.log(authHeader);
@@ -62,4 +27,4 @@ const verify =async (req,res,next) =>{
     }
 }
 
-module.exports = {checkSignUpBodyMiddleWare , checkLogInBodyMiddleWare ,verify}
+module.exports = {verify}

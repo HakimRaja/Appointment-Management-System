@@ -15,9 +15,6 @@ module.exports = {
         onUpdate : 'CASCADE',
         onDelete: 'CASCADE'
       },
-      specialization: {
-        type: Sequelize.STRING
-      },
       experience: {
         type: Sequelize.DATE
       },
