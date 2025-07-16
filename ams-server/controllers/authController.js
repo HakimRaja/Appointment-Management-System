@@ -10,7 +10,7 @@ const signUpUser = async(req,res)=>{
             replacements :{email},
             type : sequelize.QueryTypes.SELECT
         });
-        
+        // console.log({name , email , password,role,dob,phone});
         // console.log(existingUser.user_id);
         if (existingUser) {
             return res.status(400).send({message : 'user already exists'})
@@ -71,7 +71,7 @@ const signUpUser = async(req,res)=>{
         return res.status(201).send({userId : userId ,email:email ,token : token,name : name,role :role })
 
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        res.status(500).send({ message : error.message });
     }
     }
 
@@ -110,4 +110,9 @@ const getSpecializations = async(req,res)=>{
         return res.status(500).json({ error: error.message });
     }
 }
-module.exports = {logInUser , signUpUser,getSpecializations};
+
+const checkAuthorization = (req,res) =>{
+    return res.status(200).send({check : true})
+}
+
+module.exports = {logInUser , signUpUser,getSpecializations,checkAuthorization};
