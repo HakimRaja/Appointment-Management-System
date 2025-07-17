@@ -19,15 +19,15 @@ module.exports = {
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE',
       },
-      day: {
-        type: Sequelize.ENUM('monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'),
+      date: {
+        type: Sequelize.DATE,
         allowNull: false,
       },
-      start_timeSlot: {
+      start_time: {
         type: Sequelize.TIME,
         allowNull: false,
       },
-      end_timeSlot: {
+      end_time: {
         type: Sequelize.TIME,
         allowNull: false,
       },
