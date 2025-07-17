@@ -36,6 +36,10 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.TIME,
       allowNull: false
     },
+    is_booked : {
+      type : DataTypes.BOOLEAN,
+      defaultValue : false
+    },
     end_time: {
       type: DataTypes.TIME,
       allowNull: false
