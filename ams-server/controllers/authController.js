@@ -121,7 +121,7 @@ const getSpecializations = async(req,res)=>{
 }
 
 const checkAuthorization = (req,res) =>{
-    return res.status(200).send({check : true})
+    return res.status(200).send({check : true, user_id : req.user.user_id , email : req.user.email , role : req.user.role})
 }
 
 module.exports = {logInUser , signUpUser,getSpecializations,checkAuthorization};
