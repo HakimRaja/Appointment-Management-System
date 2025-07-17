@@ -28,23 +28,19 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.UUID,
       allowNull: false
     },
-    day: {
-      type: DataTypes.ENUM(
-        'monday',
-        'tuesday',
-        'wednesday',
-        'thursday',
-        'friday',
-        'saturday',
-        'sunday'
-      ),
+    date: {
+      type: DataTypes.DATE,
       allowNull: false
     },
-    start_timeSlot: {
+    start_time: {
       type: DataTypes.TIME,
       allowNull: false
     },
-    end_timeSlot: {
+    is_booked : {
+      type : DataTypes.BOOLEAN,
+      defaultValue : false
+    },
+    end_time: {
       type: DataTypes.TIME,
       allowNull: false
     },

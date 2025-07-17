@@ -22,7 +22,7 @@ const signUpUser = async(req,res)=>{
         const hashedPass = await hashPassword(password);
         const userId = uuidv4();
         const isValidated = true;
-        var newUser;
+        let newUser;
         if(role == 'admin'){
             [newUser] = await sequelize.query('INSERT INTO users(user_id,name,email,password,dob,role,is_validated,"createdAt","updatedAt") VALUES(:user_id,:name,:email, :password,:dob,:role,:is_validated, NOW(), NOW()) RETURNING user_id',{
                 replacements : {user_id:userId,name,email , password : hashedPass,dob,role,is_validated : isValidated},
@@ -121,7 +121,7 @@ const getSpecializations = async(req,res)=>{
 }
 
 const checkAuthorization = (req,res) =>{
-    return res.status(200).send({check : true})
+    return res.status(200).send({check : true, user_id : req.user.user_id , email : req.user.email , role : req.user.role})
 }
 
 module.exports = {logInUser , signUpUser,getSpecializations,checkAuthorization};

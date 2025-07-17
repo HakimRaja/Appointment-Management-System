@@ -5,6 +5,7 @@ const cors = require('cors');
 const authRouter = require('./routes/authRoutes.js');
 const adminDashboardRouter = require('./routes/adminDashboardRoutes.js');
 const addContentToSpecialization = require('./services/helper_functions/addContentToSpecialization.js');
+const patientDashboardRouter = require('./routes/patientDashboardRoutes.js');
 const app = new express();
 const PORT = process.env.PORT;
 
@@ -16,6 +17,7 @@ app.use(express.json());
 
 app.use('/api/auth',authRouter);
 app.use('/api/admindashboard',adminDashboardRouter);
+app.use('/api/patientdashboard',patientDashboardRouter);
 //add data in specialization using IIFE
 // (async () => {
 //     await addContentToSpecialization();
