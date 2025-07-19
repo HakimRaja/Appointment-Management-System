@@ -76,8 +76,8 @@ const signUpUser = async(req,res)=>{
             replacements : {phoneId,userId,phone},
             type : sequelize.QueryTypes.INSERT
         })
-        const token = generateToken({user_id : userId , email : email ,role : role})
-        return res.status(201).send({userId : userId ,email:email ,token : token,name : name,role :role })
+        const token = generateToken({user_id : userId , name : name ,role : role})
+        return res.status(201).send({user_id : userId  ,token : token,name : name,role :role })
 
     } catch (error) {
         res.status(500).send({ message : error.message });
@@ -102,8 +102,8 @@ const logInUser = async(req,res) =>{
             if (arr.includes(email)) {
                 return res.status(400).send({message : 'You are not allowed the access the resources!'});
             }
-            const token = generateToken({user_id : user.user_id , email : user.email ,role : user.role})
-            res.status(202).json({token : token , message : `hello ${user.name}`,userId : user.user_id,email : user.email});
+            const token = generateToken({user_id : user.user_id , name : user.name ,role : user.role})
+            res.status(202).json({token : token , user_id : user.user_id , name : user.name ,role : user.role});
         } catch (error) {
             res.status(500).json({ error: error.message });
         }
@@ -121,7 +121,7 @@ const getSpecializations = async(req,res)=>{
 }
 
 const checkAuthorization = (req,res) =>{
-    return res.status(200).send({check : true, user_id : req.user.user_id , email : req.user.email , role : req.user.role})
+    return res.status(200).send({check : true, user_id : req.user.user_id , name : req.user.name , role : req.user.role})
 }
 
 module.exports = {logInUser , signUpUser,getSpecializations,checkAuthorization};
