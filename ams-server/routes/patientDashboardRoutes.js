@@ -5,5 +5,6 @@ const patientDashboardRouter = require('express').Router();
 
 
 patientDashboardRouter.get('/doctors',verify,getDoctorsList);
+patientDashboardRouter.get('/book',verify,getDoctorsList);
 
 module.exports = patientDashboardRouter;

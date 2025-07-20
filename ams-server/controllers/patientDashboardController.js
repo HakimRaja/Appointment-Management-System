@@ -55,4 +55,24 @@ const getDoctorsList = async (req,res) => {
     }
 }
 
+const bookAppointment = async(req,res) =>{
+    try {
+        if (!req.body.availability_id) {
+            res.status(400).send({message : 'Something went wrong!'})
+        }
+        const availability_id = req.body.availability_id;
+        const updateAvailabilities = sequelize.query('UPDATE availabilities set is_booked=:is_booked,updatedAt=NOW() WHERE availability_id = :availability_id',{
+            replacements : {is_booked : true,availability_id},
+            type : sequelize.QueryTypes.UPDATE
+        });
+        const addAppointment = sequelize.query('INSERT INTO appointments(appointment_id,availability_id,user_id,status,createdAt,updatedAt) Values(:appointment_id,:availability_id,:user_id,:status,NOW(),NOW()) RETURNING appointment_id',{
+            replacements : {appointment_id,availability_id,user_id : req.user.user_id},
+            type : sequelize.QueryTypes.INSERT
+        });
+        return res.status(200).send({message : 'Appointment created successfully'});
+    } catch (error) {
+        return res.status(500).send({error : error.message})
+    }
+}
+
 module.exports = getDoctorsList;
