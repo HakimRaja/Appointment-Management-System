@@ -120,9 +120,36 @@ const getAppointments = async(req,res) =>{
         console.log(error);
         return res.status(500).send({error : error.message})
     }
+};
+
+const deleteAppointment = async (req,res) => {
+    if (!req.params.id) {
+        return res.status(400).send({message:'Please send appointment_id.'})
+    }
+    const appointment_id = req.params.id;
+    const t = await sequelize.transaction();
+    try {
+        const data = await sequelize.query(`UPDATE appointments set status=:status,"deletedAt"=NOW() WHERE appointment_id=:appointment_id RETURNING availability_id`,{
+            replacements : {status : 'cancelled' , appointment_id},
+            type : sequelize.QueryTypes.UPDATE,
+            transaction:t
+        })
+        const availability_id = data[0][0]?.availability_id;
+        const updateAvailabilities = await sequelize.query(`UPDATE availabilities set is_booked=:is_booked,"updatedAt"=NOW() where availability_id=:availability_id`,{
+            replacements : {is_booked : false , availability_id},
+            type : sequelize.QueryTypes.UPDATE,
+            transaction : t
+        })
+        await t.commit();
+        res.status(200).send(true);
+    } catch (error) {
+        await t.rollback();
+        console.log(error);
+        return res.status(500).send({error : error.message})
+    }
 }
 
-module.exports = {getDoctorsList,bookAppointment,getAppointments};
+module.exports = {getDoctorsList,bookAppointment,getAppointments,deleteAppointment};
 
 /* `Select appointments.appointment_id,appointments.status,availabilities.date,availabilities.start_time,availabilities.end_time,users.name,users.email,specializations.title
             FROM appointments
