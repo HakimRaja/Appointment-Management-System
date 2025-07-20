@@ -23,13 +23,9 @@ module.exports = (sequelize, DataTypes) => {
         as : 'patient_histories'
       });
       User.hasMany(models.Appointment , {
-        foreignKey : 'user_id1',
+        foreignKey : 'user_id',
         as : 'appointment_as_patient'
       });
-      User.hasMany(models.Appointment , {
-        foreignKey : 'user_id2',
-        as : 'appointment_as_doctor'
-      })
     }
   }
   User.init({
