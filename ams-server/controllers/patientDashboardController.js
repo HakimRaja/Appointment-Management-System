@@ -57,24 +57,34 @@ const getDoctorsList = async (req,res) => {
 }
 
 const bookAppointment = async(req,res) =>{
+    if (!req.body.availability_id) {
+        return res.status(400).send({message : 'Something went wrong!'})
+    }
+    const availability_id = req.body.availability_id;
+    const t = await sequelize.transaction();
     try {
-        if (!req.body.availability_id) {
-            res.status(400).send({message : 'Something went wrong!'})
-        }
-        const availability_id = req.body.availability_id;
-        
         const appointment_id = uuidv4();
+        const checkAppointments = await sequelize.query(`SELECT * FROM appointments WHERE availability_id=:availability_id AND "deletedAt" IS NULL`,{
+            replacements : {availability_id},
+            type : sequelize.QueryTypes.SELECT
+        })
+        if (checkAppointments.length > 0) {
+            return res.status(400).send({message : 'This Slot is already Booked!'});
+        }
         const addAppointment = await sequelize.query('INSERT INTO appointments(appointment_id,availability_id,user_id,"createdAt","updatedAt") Values(:appointment_id,:availability_id,:user_id,NOW(),NOW()) RETURNING appointment_id',{
             replacements : {appointment_id,availability_id,user_id : req.user.user_id},
-            type : sequelize.QueryTypes.INSERT
+            type : sequelize.QueryTypes.INSERT,
+            transaction : t
         });
         const updateAvailabilities = await sequelize.query('UPDATE availabilities set is_booked=:is_booked,"updatedAt"=NOW() WHERE availability_id = :availability_id',{
             replacements : {is_booked : true,availability_id},
-            type : sequelize.QueryTypes.UPDATE
+            type : sequelize.QueryTypes.UPDATE,
+            transaction : t
         });
-
+        await t.commit();
         return res.status(200).send({message : 'Appointment created successfully'});
     } catch (error) {
+        await t.rollback();
         console.log(error);
         return res.status(500).send({error : error.message})
     }
