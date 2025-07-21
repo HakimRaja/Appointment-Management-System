@@ -23,12 +23,13 @@ const getDoctorsList = async (req,res) => {
             doctorsList.forEach((list =>{
                 const docId = list.user_id;
                 if(!doctorsInfo[docId]){
+                    const experience = getYearsDifference(list.experience);
                     doctorsInfo[docId] = {
                         user_id : docId,
                         name:list.name,
                         email:list.email,
                         phone:list.phone_number,
-                        experience:getYearsDifference(list.experience),
+                        experience:`${experience[0]>=1 ? `${experience[0]} year and`:''} ${experience[1]} months`,
                         specializations:new Set(),
                         availabilities : new Map()
                     }
