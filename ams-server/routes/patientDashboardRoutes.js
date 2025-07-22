@@ -7,6 +7,6 @@ const patientDashboardRouter = require('express').Router();
 patientDashboardRouter.get('/doctors',verify,getDoctorsList);
 patientDashboardRouter.post('/book',verify,bookAppointment);
 patientDashboardRouter.get('/appointments/:id',verify,getAppointments);
-patientDashboardRouter.patch('/deleteappointment/:id',verify,deleteAppointment)
+patientDashboardRouter.delete('/appointment/:id',verify,deleteAppointment)
 
 module.exports = patientDashboardRouter;

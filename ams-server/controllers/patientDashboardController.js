@@ -4,15 +4,15 @@ const {v4 : uuidv4} = require('uuid');
 
 const getDoctorsList = async (req,res) => {
     try {
-        const doctorsList = await sequelize.query(`SELECT users.user_id,users.name,users.email,phones.phone_number,doctors.experience,specializations.title,availabilities.availability_id,availabilities.date,availabilities.start_time,availabilities.end_time,availabilities.is_booked,appointments.user_id as booked_by
-            FROM users 
-            JOIN phones ON users.user_id=phones.user_id
-            JOIN doctors ON users.user_id=doctors.user_id
-            JOIN doctors_specializations ON users.user_id =doctors_specializations.user_id
-            JOIN specializations ON doctors_specializations.specialization_id=specializations.specialization_id 
-            JOIN availabilities ON users.user_id = availabilities.user_id
-            LEFT JOIN appointments ON availabilities.availability_id = appointments.availability_id 
-            WHERE users.role = :role AND (appointments.status IS NULL OR appointments.status != :status OR availabilities.is_booked =:is_booked) AND availabilities.date > NOW()`,{
+        const doctorsList = await sequelize.query(`SELECT u.user_id,u.name,u.email,p.phone_number,d.experience,s.title,a.availability_id,a.date,a.start_time,a.end_time,a.is_booked,ap.user_id as booked_by
+            FROM users u
+            JOIN phones p ON u.user_id=p.user_id
+            JOIN doctors d ON u.user_id=d.user_id
+            JOIN doctors_specializations ds ON u.user_id =ds.user_id
+            JOIN specializations s ON ds.specialization_id=s.specialization_id 
+            JOIN availabilities a ON u.user_id = a.user_id
+            LEFT JOIN appointments ap ON a.availability_id = ap.availability_id 
+            WHERE u.role = :role AND (ap.status IS NULL OR ap.status != :status OR a.is_booked =:is_booked) AND a.date > NOW()`,{
                 replacements : {role : 'doctor' , status : 'cancelled',is_booked : false},
                 type : sequelize.QueryTypes.SELECT
             }); // availabilities and specializations are mostly more then one row
@@ -25,12 +25,14 @@ const getDoctorsList = async (req,res) => {
                 const docId = list.user_id;
                 if(!doctorsInfo[docId]){
                     const experience = getYearsDifference(list.experience);
+                    const experienceString = `${experience[0]>=1 ? `${experience[0]} year and`:''} ${experience[1]} months`;
+                    const {name , email , phone_number} = list;
                     doctorsInfo[docId] = {
                         user_id : docId,
-                        name:list.name,
-                        email:list.email,
-                        phone:list.phone_number,
-                        experience:`${experience[0]>=1 ? `${experience[0]} year and`:''} ${experience[1]} months`,
+                        name,
+                        email,
+                        phone:phone_number,
+                        experience: experienceString,
                         specializations:new Set(),
                         availabilities : new Map()
                     }
@@ -38,13 +40,14 @@ const getDoctorsList = async (req,res) => {
                 doctorsInfo[docId].specializations.add(list.title);
     
                 if (!(doctorsInfo[docId].availabilities.has(list.availability_id))) {
+                    const {availability_id , date , start_time ,end_time , is_booked , booked_by} = list;
                     doctorsInfo[docId].availabilities.set(list.availability_id, {
-                        availability_id : list.availability_id,
-                        date : list.date,
-                        start_time : list.start_time,
-                        end_time : list.end_time,
-                        is_booked : list.is_booked,
-                        booked_by_me : req.user.user_id === list.booked_by
+                        availability_id,
+                        date,
+                        start_time,
+                        end_time,
+                        is_booked,
+                        booked_by_me : req.user.user_id === booked_by
                     })
                 }
             }));
@@ -62,10 +65,10 @@ const getDoctorsList = async (req,res) => {
 
 const bookAppointment = async(req,res) =>{
     if (!req.body.availability_id) {
-        return res.status(400).send({message : 'Something went wrong!'})
+        return res.status(400).send({message : 'Please provide availability id!'})
     }
     const availability_id = req.body.availability_id;
-    const t = await sequelize.transaction();
+    const transaction = await sequelize.transaction();
     try {
         const appointment_id = uuidv4();
         const checkAppointments = await sequelize.query(`SELECT * FROM appointments WHERE availability_id=:availability_id AND "deletedAt" IS NULL`,{
@@ -78,17 +81,17 @@ const bookAppointment = async(req,res) =>{
         const addAppointment = await sequelize.query('INSERT INTO appointments(appointment_id,availability_id,user_id,"createdAt","updatedAt") Values(:appointment_id,:availability_id,:user_id,NOW(),NOW()) RETURNING appointment_id',{
             replacements : {appointment_id,availability_id,user_id : req.user.user_id},
             type : sequelize.QueryTypes.INSERT,
-            transaction : t
+            transaction : transaction
         });
         const updateAvailabilities = await sequelize.query('UPDATE availabilities set is_booked=:is_booked,"updatedAt"=NOW() WHERE availability_id = :availability_id',{
             replacements : {is_booked : true,availability_id},
             type : sequelize.QueryTypes.UPDATE,
-            transaction : t
+            transaction : transaction
         });
-        await t.commit();
+        await transaction.commit();
         return res.status(200).send({message : 'Appointment created successfully'});
     } catch (error) {
-        await t.rollback();
+        await transaction.rollback();
         console.log(error);
         return res.status(500).send({error : error.message})
     }
@@ -97,13 +100,13 @@ const bookAppointment = async(req,res) =>{
 const getAppointments = async(req,res) =>{
     try {
         const patient_id = req.params.id;
-        const appointmentList = await sequelize.query(`Select appointments.appointment_id,appointments.status,availabilities.date,availabilities.start_time,availabilities.end_time,users.name,users.email,specializations.title
-            FROM appointments
-            JOIN availabilities ON appointments.availability_id = availabilities.availability_id
-            JOIN users ON availabilities.user_id = users.user_id
-            JOIN doctors_specializations on users.user_id = doctors_specializations.user_id
-            JOIN specializations on doctors_specializations.specialization_id = specializations.specialization_id
-            WHERE appointments.user_id = :user_id AND appointments."deletedAt" IS NULL AND appointments.status=:status`,{
+        const appointmentList = await sequelize.query(`Select ap.appointment_id,ap.status,a.date,a.start_time,a.end_time,u.name,u.email,s.title
+            FROM appointments ap
+            JOIN availabilities a ON ap.availability_id = a.availability_id
+            JOIN users u ON a.user_id = u.user_id
+            JOIN doctors_specializations ds on u.user_id = ds.user_id
+            JOIN specializations s on ds.specialization_id = s.specialization_id
+            WHERE ap.user_id = :user_id AND ap."deletedAt" IS NULL AND ap.status=:status`,{
             replacements : {user_id : patient_id , status : 'scheduled'},
             type : sequelize.QueryTypes.SELECT
         });
@@ -114,14 +117,15 @@ const getAppointments = async(req,res) =>{
         appointmentList.forEach((list)=>{
             const appointment_id = list.appointment_id;
             if(!appointmentInfo[appointment_id]){
+                const {name , status ,date , start_time , end_time ,email} = list;
                 appointmentInfo[appointment_id] = {
-                    name : list.name,
-                    appointment_id : list.appointment_id,
-                    status : list.status,
-                    date : list.date,
-                    start_time : list.start_time,
-                    end_time : list.end_time,
-                    email : list.email,
+                    name,
+                    appointment_id,
+                    status,
+                    date,
+                    start_time,
+                    end_time,
+                    email,
                     specializations : new Set()
                 }
             }
@@ -138,7 +142,7 @@ const getAppointments = async(req,res) =>{
 
 const deleteAppointment = async (req,res) => {
     if (!req.params.id) {
-        return res.status(400).send({message:'Please send appointment_id.'})
+        return res.status(400).send({message:'Appointment Id is missing.'})
     }
     const appointment_id = req.params.id;
     const t = await sequelize.transaction();
@@ -164,11 +168,3 @@ const deleteAppointment = async (req,res) => {
 }
 
 module.exports = {getDoctorsList,bookAppointment,getAppointments,deleteAppointment};
-
-/* `Select appointments.appointment_id,appointments.status,availabilities.date,availabilities.start_time,availabilities.end_time,users.name,users.email,specializations.title
-            FROM appointments
-            JOIN availabilities ON appointments.availability_id = availabilities.availability_id
-            JOIN users ON availabilities.user_id = users.user_id
-            JOIN doctors_specializations on users.user_id = doctors_specializations.user_id
-            JOIN specializations on doctors_specializations.specialization_id = specializations.specialization_id
-            WHERE appointments.user_id = 'f6dcbdbf-aaad-4cea-8350-45570445d740' AND appointments."deletedAt" is null AND appointments.status='scheduled'` */
