@@ -9,7 +9,17 @@ module.exports = {
         allowNull: false,
         primaryKey: true,
       },
-      user_id1: {
+      availability_id : {
+        type: Sequelize.UUID,
+        allowNull: false,
+        references: {
+          model: "availabilities",
+          key: "availability_id",
+        },
+        onUpdate: "CASCADE",
+        onDelete: "CASCADE",
+      },
+      user_id: {
         // Patient id
         type: Sequelize.UUID,
         allowNull: false,
@@ -19,28 +29,6 @@ module.exports = {
         },
         onUpdate: "CASCADE",
         onDelete: "CASCADE",
-      },
-      user_id2: {
-        // doctor id
-        type: Sequelize.UUID,
-        allowNull: false,
-        references: {
-          model: "users",
-          key: "user_id",
-        },
-        onUpdate: "CASCADE",
-        onDelete: "CASCADE",
-      },
-      time_selected: {
-        type: Sequelize.TIME,
-        allowNull: false,
-      },
-      date : {
-        type : Sequelize.DATE,
-        allowNull : false
-      },
-      description: {
-        type: Sequelize.STRING,
       },
       status: {
         type: Sequelize.ENUM("cancelled", "scheduled", "completed"),

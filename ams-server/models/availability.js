@@ -15,6 +15,10 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey : 'user_id',
         as : 'doctor'
       })
+      Availability.hasOne(models.Appointment,{
+        foreignKey : 'availability_id',
+        as : 'appointment'
+      })
     }
   }
   Availability.init({

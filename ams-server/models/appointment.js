@@ -11,12 +11,12 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       Appointment.belongsTo(models.User , {
-        foreignKey : 'user_id1',
+        foreignKey : 'user_id',
         as : 'patient'
       });
-      Appointment.belongsTo(models.User , {
-        foreignKey : 'user_id2',
-        as : 'doctor'
+      Appointment.belongsTo(models.Availability , {
+        foreignKey : 'availability_id',
+        as : 'availability'
       });
       Appointment.hasOne(models.CheckUpDetail , {
         foreignKey : 'appointment_id',
@@ -38,24 +38,13 @@ module.exports = (sequelize, DataTypes) => {
       defaultValue: DataTypes.UUIDV4,
       primaryKey: true
     },
-    user_id1: {
+    availability_id : {
+      type: DataTypes.UUID,
+      allowNull: false,
+    },
+    user_id: {
       type: DataTypes.UUID,
       allowNull: false
-    },
-    user_id2: {
-      type: DataTypes.UUID,
-      allowNull: false
-    },
-    time_selected: {
-      type: DataTypes.TIME,
-      allowNull: false
-    },
-    date : {
-      type : DataTypes.DATE,
-      allowNull : false
-    },
-    description: {
-      type: DataTypes.STRING
     },
     status: {
       type: DataTypes.ENUM('cancelled', 'scheduled', 'completed'),
