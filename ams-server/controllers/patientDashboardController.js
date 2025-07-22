@@ -4,15 +4,16 @@ const {v4 : uuidv4} = require('uuid');
 
 const getDoctorsList = async (req,res) => {
     try {
-        const doctorsList = await sequelize.query(`SELECT users.user_id,users.name,users.email,phones.phone_number,doctors.experience,specializations.title,availabilities.availability_id,availabilities.date,availabilities.start_time,availabilities.end_time 
+        const doctorsList = await sequelize.query(`SELECT users.user_id,users.name,users.email,phones.phone_number,doctors.experience,specializations.title,availabilities.availability_id,availabilities.date,availabilities.start_time,availabilities.end_time,availabilities.is_booked,appointments.user_id as booked_by
             FROM users 
             JOIN phones ON users.user_id=phones.user_id
             JOIN doctors ON users.user_id=doctors.user_id
             JOIN doctors_specializations ON users.user_id =doctors_specializations.user_id
             JOIN specializations ON doctors_specializations.specialization_id=specializations.specialization_id 
             JOIN availabilities ON users.user_id = availabilities.user_id
-            WHERE users.role = :role AND availabilities.is_booked = :is_booked AND availabilities.date > NOW()`,{
-                replacements : {role : 'doctor' , is_booked : false},
+            LEFT JOIN appointments ON availabilities.availability_id = appointments.availability_id 
+            WHERE users.role = :role AND (appointments.status IS NULL OR appointments.status != :status OR availabilities.is_booked =:is_booked) AND availabilities.date > NOW()`,{
+                replacements : {role : 'doctor' , status : 'cancelled',is_booked : false},
                 type : sequelize.QueryTypes.SELECT
             }); // availabilities and specializations are mostly more then one row
         if (doctorsList.length === 0){
@@ -41,7 +42,9 @@ const getDoctorsList = async (req,res) => {
                         availability_id : list.availability_id,
                         date : list.date,
                         start_time : list.start_time,
-                        end_time : list.end_time
+                        end_time : list.end_time,
+                        is_booked : list.is_booked,
+                        booked_by_me : req.user.user_id === list.booked_by
                     })
                 }
             }));
