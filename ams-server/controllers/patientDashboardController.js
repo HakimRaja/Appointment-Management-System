@@ -11,7 +11,7 @@ const getDoctorsList = async (req,res) => {
             JOIN doctors_specializations ds ON u.user_id =ds.user_id
             JOIN specializations s ON ds.specialization_id=s.specialization_id 
             JOIN availabilities a ON u.user_id = a.user_id
-            LEFT JOIN appointments ap ON a.availability_id = ap.availability_id 
+            LEFT JOIN appointments ap ON a.availability_id = ap.availability_id AND ap."deletedAt" is null
             WHERE u.role = :role AND (ap.status IS NULL OR ap.status != :status OR a.is_booked =:is_booked) AND a.date > NOW()`,{
                 replacements : {role : 'doctor' , status : 'cancelled',is_booked : false},
                 type : sequelize.QueryTypes.SELECT
@@ -100,7 +100,7 @@ const bookAppointment = async(req,res) =>{
 const getAppointments = async(req,res) =>{
     try {
         const patient_id = req.params.id;
-        const appointmentList = await sequelize.query(`Select ap.appointment_id,ap.status,a.date,a.start_time,a.end_time,u.name,u.email,s.title
+        const appointmentList = await sequelize.query(`Select ap.appointment_id,ap.status,a.user_id as doctor_id,a.date,a.start_time,a.end_time,u.name,u.email,s.title
             FROM appointments ap
             JOIN availabilities a ON ap.availability_id = a.availability_id
             JOIN users u ON a.user_id = u.user_id
@@ -117,8 +117,9 @@ const getAppointments = async(req,res) =>{
         appointmentList.forEach((list)=>{
             const appointment_id = list.appointment_id;
             if(!appointmentInfo[appointment_id]){
-                const {name , status ,date , start_time , end_time ,email} = list;
+                const {name , status ,date , start_time , end_time ,email,doctor_id} = list;
                 appointmentInfo[appointment_id] = {
+                    doctor_id,
                     name,
                     appointment_id,
                     status,
@@ -145,26 +146,89 @@ const deleteAppointment = async (req,res) => {
         return res.status(400).send({message:'Appointment Id is missing.'})
     }
     const appointment_id = req.params.id;
-    const t = await sequelize.transaction();
+    const transaction = await sequelize.transaction();
     try {
         const data = await sequelize.query(`UPDATE appointments set status=:status,"deletedAt"=NOW() WHERE appointment_id=:appointment_id RETURNING availability_id`,{
             replacements : {status : 'cancelled' , appointment_id},
             type : sequelize.QueryTypes.UPDATE,
-            transaction:t
+            transaction:transaction
         })
         const availability_id = data[0][0]?.availability_id;
         const updateAvailabilities = await sequelize.query(`UPDATE availabilities set is_booked=:is_booked,"updatedAt"=NOW() where availability_id=:availability_id`,{
             replacements : {is_booked : false , availability_id},
             type : sequelize.QueryTypes.UPDATE,
-            transaction : t
+            transaction : transaction
         })
-        await t.commit();
+        await transaction.commit();
         res.status(200).send(true);
     } catch (error) {
-        await t.rollback();
+        await transaction.rollback();
+        console.log(error);
+        return res.status(500).send({error : error.message})
+    }
+};
+
+const getAvailabilitiesForUpdate = async(req,res)=>{
+    const patient_id = req.user.user_id;
+    const {doctor_id} = req.params;
+    if (!doctor_id) {
+        return res.status(400).send({message:'DoctorId is missing.'})
+    }
+    try {
+        const getAvailabilities = await sequelize.query(`SELECT a.availability_id,a.start_time,a.end_time,a.date,a.is_booked,ap.user_id
+            from availabilities a
+            left join appointments ap ON a.availability_id = ap.availability_id AND ap."deletedAt" is null
+            WHERE a.user_id=:doctor_id and (ap.status is null OR ap.status!=:status OR a.is_booked=:is_booked)`,{
+            replacements : {doctor_id,status : 'cancelled',is_booked : false},
+            type : sequelize.QueryTypes.SELECT
+        })
+        const availabilities = getAvailabilities.map(avail => ({...avail , booked_by_me : avail?.user_id == patient_id}));
+        return res.status(200).send({availabilities})
+    } catch (error) {
         console.log(error);
         return res.status(500).send({error : error.message})
     }
 }
 
-module.exports = {getDoctorsList,bookAppointment,getAppointments,deleteAppointment};
+const updateAppointments = async (req,res) => {
+    const {appointment_id} = req.params;
+    const {availability_id} = req.body;
+    if (!appointment_id || ! availability_id) {
+        return res.status(400).send({message : 'Please provide both appointment_id and availability_id.'});
+    }
+    const transaction = await sequelize.transaction()
+    try {
+        const oldAppointment  = await sequelize.query(`SELECT availability_id from appointments where appointment_id = :appointment_id`,{
+            replacements : {appointment_id},
+            type : sequelize.QueryTypes.SELECT
+        });
+        if (oldAppointment.length < 1) {
+            return res.status(400).send({message : 'Please prvide a valid appointment_id'});
+        }
+        const oldAvailability_id = oldAppointment[0].availability_id;
+        const updateAppointment = await sequelize.query(`UPDATE appointments set availability_id = :availability_id,"updatedAt" = NOW() where appointment_id = :appointment_id AND "deletedAt" IS NULL`,{
+            replacements : {availability_id,appointment_id},
+            type : sequelize.QueryTypes.UPDATE,
+            transaction
+        });
+        const updateAvailability = await sequelize.query(`UPDATE availabilities set is_booked=:is_booked,"updatedAt" = NOW() where availability_id = :availability_id`,{
+            replacements : {is_booked : true,availability_id},
+            type : sequelize.QueryTypes.UPDATE,
+            transaction
+        });
+        const updateOldAvailability = await sequelize.query(`UPDATE availabilities set is_booked=:is_booked,"updatedAt" = NOW() where availability_id=:oldAvailability_id`,{
+            replacements : {is_booked : false,oldAvailability_id},
+            type : sequelize.QueryTypes.UPDATE,
+            transaction
+        });
+
+        await transaction.commit();
+        return res.status(200).send(true);
+    } catch (error) {
+        await transaction.rollback();
+        console.log(error.message);
+        res.status(500).send({error : error.message})
+    }
+}
+
+module.exports = {getDoctorsList,bookAppointment,getAppointments,deleteAppointment,getAvailabilitiesForUpdate,updateAppointments};
