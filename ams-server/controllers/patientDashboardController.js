@@ -10,7 +10,7 @@ const getDoctorsList = async (req,res) => {
             JOIN doctors d ON u.user_id=d.user_id
             JOIN doctors_specializations ds ON u.user_id =ds.user_id
             JOIN specializations s ON ds.specialization_id=s.specialization_id 
-            JOIN availabilities a ON u.user_id = a.user_id
+            JOIN availabilities a ON u.user_id = a.user_id AND a."deletedAt" IS NULL
             LEFT JOIN appointments ap ON a.availability_id = ap.availability_id AND ap."deletedAt" is null
             WHERE u.role = :role AND (ap.status IS NULL OR ap.status != :status OR a.is_booked =:is_booked) AND a.date > NOW()`,{
                 replacements : {role : 'doctor' , status : 'cancelled',is_booked : false},
