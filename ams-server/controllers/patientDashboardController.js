@@ -1,4 +1,3 @@
-const sequelize = require("../config/dbConfig");
 const { getDoctors, book, appointments, deleteAppointmentAndUpdateAvailability, availabilitiesForUpdate, update } = require("../services/patientDashboard");
 
 const getDoctorsList = async (req,res) => {
