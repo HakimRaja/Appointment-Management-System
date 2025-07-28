@@ -91,4 +91,117 @@ const book = async(availability_id,user_id)=> {
     }
 }
 
-module.exports = {getDoctors,book}
+const appointments = async (patient_id) => {
+    try {
+        const appointmentList = await sequelize.query(`Select ap.appointment_id,ap.status,a.user_id as doctor_id,a.date,a.start_time,a.end_time,u.name,u.email,s.title
+            FROM appointments ap
+            JOIN availabilities a ON ap.availability_id = a.availability_id
+            JOIN users u ON a.user_id = u.user_id
+            JOIN doctors_specializations ds on u.user_id = ds.user_id
+            JOIN specializations s on ds.specialization_id = s.specialization_id
+            WHERE ap.user_id = :user_id AND ap."deletedAt" IS NULL AND ap.status=:status`,{
+            replacements : {user_id : patient_id , status : 'scheduled'},
+            type : sequelize.QueryTypes.SELECT
+        });
+        if (appointmentList.length === 0) {
+            return false;
+        }
+        const appointmentInfo = {};
+        appointmentList.forEach((list)=>{
+            const appointment_id = list.appointment_id;
+            if(!appointmentInfo[appointment_id]){
+                const {name , status ,date , start_time , end_time ,email,doctor_id} = list;
+                appointmentInfo[appointment_id] = {
+                    doctor_id,
+                    name,
+                    appointment_id,
+                    status,
+                    date,
+                    start_time,
+                    end_time,
+                    email,
+                    specializations : new Set()
+                }
+            }
+            appointmentInfo[appointment_id].specializations.add(list.title)
+        });
+        const finalAppointments = Object.values(appointmentInfo).map(info => ({...info,specializations : Array.from(info.specializations) }));
+        return finalAppointments;
+    } catch (error) {
+        throw error;
+    }
+}
+
+const deleteAppointmentAndUpdateAvailability = async(appointment_id) =>{
+    const transaction = await sequelize.transaction();
+    try {
+        const data = await sequelize.query(`UPDATE appointments set status=:status,"deletedAt"=NOW() WHERE appointment_id=:appointment_id RETURNING availability_id`,{
+            replacements : {status : 'cancelled' , appointment_id},
+            type : sequelize.QueryTypes.UPDATE,
+            transaction
+        })
+        const availability_id = data[0][0]?.availability_id;
+        const updateAvailabilities = await sequelize.query(`UPDATE availabilities set is_booked=:is_booked,"updatedAt"=NOW() where availability_id=:availability_id`,{
+            replacements : {is_booked : false , availability_id},
+            type : sequelize.QueryTypes.UPDATE,
+            transaction
+        })
+        await transaction.commit();
+        return true;
+    } catch (error) {
+        await transaction.rollback();
+        throw error;
+    }
+};
+
+const availabilitiesForUpdate = async (patient_id,doctor_id) => {
+    try {
+        const getAvailabilities = await sequelize.query(`SELECT a.availability_id,a.start_time,a.end_time,a.date,a.is_booked,ap.user_id
+            from availabilities a
+            left join appointments ap ON a.availability_id = ap.availability_id AND ap."deletedAt" is null
+            WHERE a.user_id=:doctor_id and (ap.status is null OR ap.status!=:status OR a.is_booked=:is_booked)`,{
+            replacements : {doctor_id,status : 'cancelled',is_booked : false},
+            type : sequelize.QueryTypes.SELECT
+        })
+        const availabilities = getAvailabilities.map(avail => ({...avail , booked_by_me : avail?.user_id == patient_id}));
+        return availabilities;
+    } catch (error) {
+        throw error;
+    }
+}
+
+const update = async (appointment_id,availability_id) => {
+    const transaction = await sequelize.transaction();
+    try {
+        const oldAppointment  = await sequelize.query(`SELECT availability_id from appointments where appointment_id = :appointment_id`,{
+            replacements : {appointment_id},
+            type : sequelize.QueryTypes.SELECT
+        });
+        if (oldAppointment.length < 1) {
+            return false;
+        }
+        const oldAvailability_id = oldAppointment[0].availability_id;
+        const updateAppointment = await sequelize.query(`UPDATE appointments set availability_id = :availability_id,"updatedAt" = NOW() where appointment_id = :appointment_id AND "deletedAt" IS NULL`,{
+            replacements : {availability_id,appointment_id},
+            type : sequelize.QueryTypes.UPDATE,
+            transaction
+        });
+        const updateAvailability = await sequelize.query(`UPDATE availabilities set is_booked=:is_booked,"updatedAt" = NOW() where availability_id = :availability_id`,{
+            replacements : {is_booked : true,availability_id},
+            type : sequelize.QueryTypes.UPDATE,
+            transaction
+        });
+        const updateOldAvailability = await sequelize.query(`UPDATE availabilities set is_booked=:is_booked,"updatedAt" = NOW() where availability_id=:oldAvailability_id`,{
+            replacements : {is_booked : false,oldAvailability_id},
+            type : sequelize.QueryTypes.UPDATE,
+            transaction
+        });
+        transaction.commit();
+        return true;
+    } catch (error) {
+        transaction.rollback();
+        throw error;
+    }
+}
+
+module.exports = {getDoctors,book,appointments,deleteAppointmentAndUpdateAvailability,availabilitiesForUpdate,update};
