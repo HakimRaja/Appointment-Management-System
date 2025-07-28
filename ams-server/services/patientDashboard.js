@@ -99,8 +99,8 @@ const appointments = async (patient_id) => {
             JOIN users u ON a.user_id = u.user_id
             JOIN doctors_specializations ds on u.user_id = ds.user_id
             JOIN specializations s on ds.specialization_id = s.specialization_id
-            WHERE ap.user_id = :user_id AND ap."deletedAt" IS NULL AND ap.status=:status`,{
-            replacements : {user_id : patient_id , status : 'scheduled'},
+            WHERE ap.user_id = :user_id AND ap."deletedAt" IS NULL `,{
+            replacements : {user_id : patient_id },
             type : sequelize.QueryTypes.SELECT
         });
         if (appointmentList.length === 0) {
@@ -181,8 +181,8 @@ const update = async (appointment_id,availability_id) => {
             return false;
         }
         const oldAvailability_id = oldAppointment[0].availability_id;
-        const updateAppointment = await sequelize.query(`UPDATE appointments set availability_id = :availability_id,"updatedAt" = NOW() where appointment_id = :appointment_id AND "deletedAt" IS NULL`,{
-            replacements : {availability_id,appointment_id},
+        const updateAppointment = await sequelize.query(`UPDATE appointments set availability_id = :availability_id,status=:status,"updatedAt" = NOW() where appointment_id = :appointment_id AND "deletedAt" IS NULL`,{
+            replacements : {availability_id,status : 'scheduled',appointment_id},
             type : sequelize.QueryTypes.UPDATE,
             transaction
         });
