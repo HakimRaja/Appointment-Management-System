@@ -61,4 +61,41 @@ const deleteSlot = async(availability_id) =>{
     }
 }
 
-module.exports = {get,insert,deleteSlot}
+const cancelAndDelete = async (availability_id) => {
+    const transaction = await sequelize.transaction();
+    try {
+        const cancelAppointment = await sequelize.query(`UPDATE appointments set status = :status,"updatedAt"=NOW() where availability_id=:availability_id and "deletedAt" IS NULL`,{
+            replacements : {status : 'cancelled',availability_id},
+            type : sequelize.QueryTypes.UPDATE,
+            transaction
+        })
+        const deleteAvailability = await sequelize.query(`UPDATE availabilities set "deletedAt"=NOW() where availability_id = :availability_id`,{
+            replacements : {availability_id},
+            type : sequelize.QueryTypes.UPDATE,
+            transaction
+        })
+        await transaction.commit();
+        return true;
+    } catch (error) {
+        await transaction.rollback()
+        throw error;
+    }
+}
+
+const patient = async (patient_id) => {
+    try {
+        const patient = await sequelize.query(`SELECT u.name,u.email,p.phone_number,ph.history
+            from users u
+            JOIN phones p ON u.user_id = p.user_id
+            JOIN patient_histories ph ON u.user_id = ph.user_id
+            WHERE u.user_id = :patient_id`,{
+                replacements : {patient_id},
+                type : sequelize.QueryTypes.SELECT
+            })
+            return patient[0];
+    } catch (error) {
+        throw error;
+    }
+}
+
+module.exports = {get,insert,deleteSlot,cancelAndDelete,patient}

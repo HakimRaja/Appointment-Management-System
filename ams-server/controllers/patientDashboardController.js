@@ -28,7 +28,6 @@ const bookAppointment = async(req,res) =>{
         
         return res.status(200).send({message : 'Appointment created successfully'});
     } catch (error) {
-        console.log(error);
         return res.status(500).send({error : error.message})
     }
 }
@@ -38,12 +37,11 @@ const getAppointments = async(req,res) =>{
         const patient_id = req.params.id;
         const finalAppointments = await appointments(patient_id);
         if (!finalAppointments) {
-            return res.status(200).send(false);
+            return res.status(200).send({finalAppointments : []});
         }
 
         return res.status(200).send({finalAppointments});
     } catch (error) {
-        console.log(error);
         return res.status(500).send({error : error.message})
     }
 };
@@ -55,9 +53,8 @@ const deleteAppointment = async (req,res) => {
     const appointment_id = req.params.id;
     try {
         const data = await deleteAppointmentAndUpdateAvailability(appointment_id);
-        res.status(200).send(true);
+        res.status(200).send({message : 'Successfully deleted'});
     } catch (error) {
-        console.log(error);
         return res.status(500).send({error : error.message})
     }
 };
@@ -72,7 +69,6 @@ const getAvailabilitiesForUpdate = async(req,res)=>{
         const availabilities = await availabilitiesForUpdate(patient_id,doctor_id);
         return res.status(200).send({availabilities})
     } catch (error) {
-        console.log(error);
         return res.status(500).send({error : error.message})
     }
 }
@@ -92,7 +88,6 @@ const updateAppointments = async (req,res) => {
         
         return res.status(200).send(true);
     } catch (error) {
-        console.log(error.message);
         res.status(500).send({error : error.message})
     }
 }
