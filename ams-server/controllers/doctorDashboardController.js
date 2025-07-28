@@ -1,4 +1,4 @@
-const {get, insert, deleteSlot, cancelAndDelete, patient} = require('../services/doctorDashboard')
+const {get, insert, deleteSlot, cancelAndDelete, patient, complete} = require('../services/doctorDashboard')
 
 const getAvailabilities = async (req,res) => {
     const doctors_user_id = req?.user?.user_id;
@@ -74,4 +74,17 @@ const patientDetails = async (req,res) => {
     }
 }
 
-module.exports = {getAvailabilities,addAvailability,deleteAvailability,cancelAppointmentAndRemoveAvailability,patientDetails};
+const addAppointmentToComplete = async (req,res) => {
+    const {availability_id} = req.params;
+    if (!availability_id) {
+        return res.status(400).send({message : 'Availability_id is missing .'})
+    }
+    try {
+        const result = await complete(availability_id);
+        return res.status(200).send({message : 'Success'});
+    } catch (error) {
+        return res.status(500).send({message : error.message});
+    }
+}
+
+module.exports = {getAvailabilities,addAvailability,deleteAvailability,cancelAppointmentAndRemoveAvailability,patientDetails,addAppointmentToComplete};

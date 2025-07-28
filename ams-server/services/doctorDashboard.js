@@ -86,8 +86,8 @@ const patient = async (patient_id) => {
     try {
         const patient = await sequelize.query(`SELECT u.name,u.email,p.phone_number,ph.history
             from users u
-            JOIN phones p ON u.user_id = p.user_id
-            JOIN patient_histories ph ON u.user_id = ph.user_id
+            LEFT JOIN phones p ON u.user_id = p.user_id
+            LEFT JOIN patient_histories ph ON u.user_id = ph.user_id
             WHERE u.user_id = :patient_id`,{
                 replacements : {patient_id},
                 type : sequelize.QueryTypes.SELECT
@@ -98,4 +98,16 @@ const patient = async (patient_id) => {
     }
 }
 
-module.exports = {get,insert,deleteSlot,cancelAndDelete,patient}
+const complete = async (availability_id) => {
+    try {
+        const addToComplete = await sequelize.query(`UPDATE appointments set status=:status,"updatedAt"=NOW() WHERE availability_id=:availability_id AND "deletedAt" IS NULL`,{
+            replacements : {status : 'completed',availability_id},
+            type : sequelize.QueryTypes.SELECT
+        })
+        return true;
+    } catch (error) {
+        throw error;
+    }
+}
+
+module.exports = {get,insert,deleteSlot,cancelAndDelete,patient,complete}
