@@ -1,5 +1,16 @@
 const sequelize = require("../config/dbConfig");
+const { getUsers } = require("../services/adminDashboard");
 const { getNotValidatedArray } = require("../services/authServices")
+
+const getAllUsers = async (req,res) => {
+    const admin_id = req.user.user_id;
+    try {
+        const users = await getUsers(admin_id);
+        return res.status(200).send({users});
+    } catch (error) {
+        return res.status(500).send({error : error?.message});
+    }
+}
 
 const getNonValidatedUsers = async(req,res) =>{
     try {
@@ -43,4 +54,4 @@ const RemoveNonValidatedUser = async(req,res) =>{
     }
 }
 
-module.exports = {addNonValidatedUser , getNonValidatedUsers ,RemoveNonValidatedUser}
+module.exports = {addNonValidatedUser , getNonValidatedUsers ,RemoveNonValidatedUser,getAllUsers}
