@@ -3,9 +3,13 @@ const { getDoctors, book, appointments, deleteAppointmentAndUpdateAvailability, 
 const getDoctorsList = async (req,res) => {
     const user_id = req.user.user_id;
     const {pageNumber} = req.query;
+    let {doctorsPerPage} = req.query;
+    if (!doctorsPerPage) {
+        doctorsPerPage=1;
+    }
     try {
-        const {finalDoctors,maxPage} = await getDoctors(user_id,pageNumber);
-        res.status(200).send({finalDoctors,maxPage});
+        const finalDoctors = await getDoctors(user_id,pageNumber,doctorsPerPage);
+        res.status(200).send({finalDoctors});
     } catch (error) {
         res.status(500).send({error : error.message})
     }
@@ -32,11 +36,9 @@ const bookAppointment = async(req,res) =>{
 
 const getAppointments = async(req,res) =>{
     try {
-        const patient_id = req.params.id;
-        const finalAppointments = await appointments(patient_id);
-        if (!finalAppointments) {
-            return res.status(200).send({finalAppointments : []});
-        }
+        const patient_id = req.user.user_id;
+        const {pageNumber,appointmentsPerPage} = req.query;
+        const finalAppointments = await appointments(patient_id,pageNumber,appointmentsPerPage);
 
         return res.status(200).send({finalAppointments});
     } catch (error) {
