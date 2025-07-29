@@ -2,60 +2,53 @@ const sequelize = require("../config/dbConfig");
 const getYearsDifference = require("../utils/patientDashboard");
 const {v4 : uuidv4} = require('uuid');
 
-const getDoctors = async (user_id) => {
+const getDoctors = async (user_id,pageNumber,doctorsPerPage) => {
     try {
-        const doctorsList = await sequelize.query(`SELECT u.user_id,u.name,u.email,p.phone_number,d.experience,s.title,a.availability_id,a.date,a.start_time,a.end_time,a.is_booked,ap.user_id as booked_by
+        const limit = doctorsPerPage;
+        const offset = (pageNumber-1) * doctorsPerPage;
+        const doctors = await sequelize.query(`SELECT u.user_id,u.name,u.email,p.phone_number,d.experience
             FROM users u
             JOIN phones p ON u.user_id=p.user_id
             JOIN doctors d ON u.user_id=d.user_id
-            JOIN doctors_specializations ds ON u.user_id =ds.user_id
-            JOIN specializations s ON ds.specialization_id=s.specialization_id 
-            JOIN availabilities a ON u.user_id = a.user_id AND a."deletedAt" IS NULL
-            LEFT JOIN appointments ap ON a.availability_id = ap.availability_id AND ap."deletedAt" is null
-            WHERE u.role = :role AND (ap.status IS NULL OR ap.status != :status OR a.is_booked =:is_booked) AND a.date > NOW()`,{
-                replacements : {role : 'doctor' , status : 'cancelled',is_booked : false},
-                type : sequelize.QueryTypes.SELECT
-            }); // availabilities and specializations are mostly more then one row
-        if (doctorsList.length === 0){
-            return false;
+            WHERE u.role = :role
+            LIMIT :limit OFFSET :offset`,{
+            replacements : {role : 'doctor',limit,offset},
+            type : sequelize.QueryTypes.SELECT
+        });
+        if (doctors.length === 0){
+            return [];
         }
-        
-            const doctorsInfo = {};
-            doctorsList.forEach((list =>{
-                const docId = list.user_id;
-                if(!doctorsInfo[docId]){
-                    const experience = getYearsDifference(list.experience);
-                    const experienceString = `${experience[0]>=1 ? `${experience[0]} year and`:''} ${experience[1]} months`;
-                    const {name , email , phone_number} = list;
-                    doctorsInfo[docId] = {
-                        user_id : docId,
-                        name,
-                        email,
-                        phone:phone_number,
-                        experience: experienceString,
-                        specializations:new Set(),
-                        availabilities : new Map()
-                    }
-                }
-                doctorsInfo[docId].specializations.add(list.title);
-    
-                if (!(doctorsInfo[docId].availabilities.has(list.availability_id))) {
-                    const {availability_id , date , start_time ,end_time , is_booked , booked_by} = list;
-                    doctorsInfo[docId].availabilities.set(list.availability_id, {
-                        availability_id,
-                        date,
-                        start_time,
-                        end_time,
-                        is_booked,
-                        booked_by_me :  user_id === booked_by
-                    })
-                }
-            }));
-            const finalDoctors = Object.values(doctorsInfo).map(doc =>({
-                ...doc,
-                specializations : Array.from(doc.specializations),
-                availabilities : Array.from(doc.availabilities.values())
-            }));
+        const userIds = doctors.map((doc)=> doc.user_id);
+        const specialization = await sequelize.query(`SELECT ds.user_id,s.title
+            FROM doctors_specializations ds
+            JOIN specializations s ON ds.specialization_id = s.specialization_id
+            WHERE ds.user_id IN (:userIds)`,{
+                replacements : {userIds},
+                type : sequelize.QueryTypes.SELECT
+            });
+        const availability = await sequelize.query(`SELECT a.user_id,a.availability_id,a.date,a.start_time,a.end_time,a.is_booked,ap.user_id as booked_by
+            FROM availabilities a
+            LEFT JOIN appointments ap ON a.availability_id = ap.availability_id AND ap."deletedAt" is null
+            WHERE a.user_id IN (:userIds) AND a."deletedAt" IS NULL AND (ap.status IS NULL OR ap.status != :status OR a.is_booked =:is_booked) AND a.date > NOW()`,{
+                replacements : {userIds,status : 'cancelled',is_booked : false},
+                type : sequelize.QueryTypes.SELECT
+            })
+        const finalDoctors = doctors.map((doc) =>{
+           const experience = getYearsDifference(doc.experience);
+           const experienceString = `${experience[0]>=1 ? `${experience[0]} year and`:''} ${experience[1]} months`;
+
+           const specializations = specialization.filter(spec => spec.user_id === doc.user_id).map(spec => spec.title);
+           
+           const availabilities =  availability.filter(avail => avail.user_id === doc.user_id).map(a => {
+                
+                const {availability_id,date,start_time,end_time,is_booked} = a;
+                return {availability_id,date,start_time,end_time,is_booked,booked_by_me :  user_id === a.booked_by}})
+
+           return {...doc,
+            experience : experienceString,
+            specializations,
+            availabilities}
+        })
             return finalDoctors;
     } catch (error) {
         throw error;
@@ -91,41 +84,40 @@ const book = async(availability_id,user_id)=> {
     }
 }
 
-const appointments = async (patient_id) => {
+const appointments = async (patient_id,pageNumber,appointmentsPerPage) => {
+    const limit = appointmentsPerPage;
+    const offset = (pageNumber-1)*appointmentsPerPage;
     try {
-        const appointmentList = await sequelize.query(`Select ap.appointment_id,ap.status,a.user_id as doctor_id,a.date,a.start_time,a.end_time,u.name,u.email,s.title
+        const appointments = await sequelize.query(`Select ap.appointment_id,ap.status,a.user_id as doctor_id,a.date,a.start_time,a.end_time,u.name,u.email
             FROM appointments ap
             JOIN availabilities a ON ap.availability_id = a.availability_id
             JOIN users u ON a.user_id = u.user_id
-            JOIN doctors_specializations ds on u.user_id = ds.user_id
+            WHERE ap.user_id = :user_id AND ap."deletedAt" IS NULL
+            ORDER BY a.date DESC
+            LIMIT :limit OFFSET :offset
+            `,{
+            replacements : {user_id : patient_id,limit,offset},
+            type : sequelize.QueryTypes.SELECT
+        })
+        if (appointments.length === 0) {
+            return []
+        }
+        const doctorIds = appointments.map(ap => ap.doctor_id);
+
+        const specialization = await sequelize.query(`Select ds.user_id,s.title
+            FROM doctors_specializations ds
             JOIN specializations s on ds.specialization_id = s.specialization_id
-            WHERE ap.user_id = :user_id AND ap."deletedAt" IS NULL `,{
-            replacements : {user_id : patient_id },
+            WHERE ds.user_id IN (:doctorIds)`,{
+            replacements : {doctorIds},
             type : sequelize.QueryTypes.SELECT
         });
-        if (appointmentList.length === 0) {
-            return false;
-        }
-        const appointmentInfo = {};
-        appointmentList.forEach((list)=>{
-            const appointment_id = list.appointment_id;
-            if(!appointmentInfo[appointment_id]){
-                const {name , status ,date , start_time , end_time ,email,doctor_id} = list;
-                appointmentInfo[appointment_id] = {
-                    doctor_id,
-                    name,
-                    appointment_id,
-                    status,
-                    date,
-                    start_time,
-                    end_time,
-                    email,
-                    specializations : new Set()
-                }
-            }
-            appointmentInfo[appointment_id].specializations.add(list.title)
-        });
-        const finalAppointments = Object.values(appointmentInfo).map(info => ({...info,specializations : Array.from(info.specializations) }));
+        const finalAppointments = appointments.map(ap => ({
+            ...ap,
+            specializations : specialization
+                .filter(sp => sp.user_id === ap.doctor_id)
+                .map(sp => sp.title)
+        }))
+
         return finalAppointments;
     } catch (error) {
         throw error;

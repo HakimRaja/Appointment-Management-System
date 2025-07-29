@@ -6,7 +6,7 @@ const patientDashboardRouter = require('express').Router();
 
 patientDashboardRouter.get('/doctors',verify,getDoctorsList);
 patientDashboardRouter.post('/book',verify,bookAppointment);
-patientDashboardRouter.get('/appointments/:id',verify,getAppointments);
+patientDashboardRouter.get('/appointments',verify,getAppointments);
 patientDashboardRouter.delete('/appointment/:id',verify,deleteAppointment);
 patientDashboardRouter.get('/appointment/:doctor_id',verify,getAvailabilitiesForUpdate);
 patientDashboardRouter.patch('/appointment/:appointment_id',verify,updateAppointments);
