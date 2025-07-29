@@ -2,12 +2,10 @@ const { getDoctors, book, appointments, deleteAppointmentAndUpdateAvailability, 
 
 const getDoctorsList = async (req,res) => {
     const user_id = req.user.user_id;
+    const {pageNumber} = req.query;
     try {
-        const finalDoctors = await getDoctors(user_id);
-        if (!finalDoctors) {
-            return res.status(200).send({check : false});
-        }
-        res.status(200).send({finalDoctors});
+        const {finalDoctors,maxPage} = await getDoctors(user_id,pageNumber);
+        res.status(200).send({finalDoctors,maxPage});
     } catch (error) {
         res.status(500).send({error : error.message})
     }

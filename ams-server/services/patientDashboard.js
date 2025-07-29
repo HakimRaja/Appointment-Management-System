@@ -2,7 +2,7 @@ const sequelize = require("../config/dbConfig");
 const getYearsDifference = require("../utils/patientDashboard");
 const {v4 : uuidv4} = require('uuid');
 
-const getDoctors = async (user_id) => {
+const getDoctors = async (user_id,pageNumber) => {
     try {
         const doctorsList = await sequelize.query(`SELECT u.user_id,u.name,u.email,p.phone_number,d.experience,s.title,a.availability_id,a.date,a.start_time,a.end_time,a.is_booked,ap.user_id as booked_by
             FROM users u
@@ -17,7 +17,9 @@ const getDoctors = async (user_id) => {
                 type : sequelize.QueryTypes.SELECT
             }); // availabilities and specializations are mostly more then one row
         if (doctorsList.length === 0){
-            return false;
+            const finalDoctors = [];
+            const maxPage =1;
+            return {finalDoctors,maxPage};
         }
         
             const doctorsInfo = {};
@@ -56,7 +58,9 @@ const getDoctors = async (user_id) => {
                 specializations : Array.from(doc.specializations),
                 availabilities : Array.from(doc.availabilities.values())
             }));
-            return finalDoctors;
+            const maxPage = Math.ceil(finalDoctors.length/4);
+            const result = {finalDoctors : finalDoctors.slice((pageNumber-1)*4,pageNumber*4) , maxPage};
+            return result;
     } catch (error) {
         throw error;
     }
