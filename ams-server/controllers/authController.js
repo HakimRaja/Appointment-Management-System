@@ -78,7 +78,7 @@ const signUpUser = async(req,res)=>{
         return res.status(201).send({...userObject,token})
 
     } catch (error) {
-        return res.status(500).send({ message : error.message });
+        return res.status(500).send({ message : `Something Went Wrong` });
     }
     }
 
@@ -90,7 +90,7 @@ const logInUser = async(req,res) =>{
                 type : sequelize.QueryTypes.SELECT
             });
             if(!user){
-                return res.status(401).send({message : 'Invalid Username'})
+                return res.status(401).send({message : 'Invalid Email'})
             };
             const isMatch =await comparePassword(password,user.password);
             if(!isMatch){
@@ -105,7 +105,7 @@ const logInUser = async(req,res) =>{
             const token = generateToken(userObject)
             return res.status(202).json({...userObject,token});
         } catch (error) {
-            return res.status(500).json({ error: error.message });
+            return res.status(500).json({ error: `Something Went Wrong` });
         }
         }
     
