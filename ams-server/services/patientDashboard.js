@@ -151,7 +151,7 @@ const availabilitiesForUpdate = async (patient_id,doctor_id) => {
         const getAvailabilities = await sequelize.query(`SELECT a.availability_id,a.start_time,a.end_time,a.date,a.is_booked,ap.user_id
             from availabilities a
             left join appointments ap ON a.availability_id = ap.availability_id AND ap."deletedAt" is null
-            WHERE a.user_id=:doctor_id and (ap.status is null OR ap.status!=:status OR a.is_booked=:is_booked)`,{
+            WHERE a.user_id=:doctor_id and (ap.status is null OR ap.status!=:status OR a.is_booked=:is_booked) and a.date > NOW()`,{
             replacements : {doctor_id,status : 'cancelled',is_booked : false},
             type : sequelize.QueryTypes.SELECT
         })
