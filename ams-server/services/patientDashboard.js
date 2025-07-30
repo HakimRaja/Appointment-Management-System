@@ -18,7 +18,12 @@ const getDoctors = async (user_id,pageNumber,doctorsPerPage) => {
         if (doctors.length === 0){
             return [];
         }
-        const userIds = doctors.map((doc)=> doc.user_id);
+        let i=offset+1;
+        const userIds = doctors.map((doc)=> {
+            doc.picture = `https://hakimraja.github.io/AMS-assets/images/male/doctor${i}.jpg`;
+            i++;
+            return doc.user_id;
+        });
         const specialization = await sequelize.query(`SELECT ds.user_id,s.title
             FROM doctors_specializations ds
             JOIN specializations s ON ds.specialization_id = s.specialization_id
