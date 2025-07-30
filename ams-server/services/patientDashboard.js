@@ -2,7 +2,7 @@ const sequelize = require("../config/dbConfig");
 const getYearsDifference = require("../utils/patientDashboard");
 const {v4 : uuidv4} = require('uuid');
 
-const getDoctors = async (user_id,pageNumber,doctorsPerPage) => {
+const getDoctors = async (user_id,pageNumber,doctorsPerPage,input) => {
     try {
         const limit = doctorsPerPage;
         const offset = (pageNumber-1) * doctorsPerPage;
@@ -10,9 +10,10 @@ const getDoctors = async (user_id,pageNumber,doctorsPerPage) => {
             FROM users u
             JOIN phones p ON u.user_id=p.user_id
             JOIN doctors d ON u.user_id=d.user_id
-            WHERE u.role = :role
+            WHERE u.role = :role AND u.name ILIKE CONCAT('%',:input,'%')
+            ORDER BY d.experience 
             LIMIT :limit OFFSET :offset`,{
-            replacements : {role : 'doctor',limit,offset},
+            replacements : {role : 'doctor',input,limit,offset},
             type : sequelize.QueryTypes.SELECT
         });
         if (doctors.length === 0){
