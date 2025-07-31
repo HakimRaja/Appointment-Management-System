@@ -1,7 +1,21 @@
-const {get, insert, deleteSlot, cancelAndDelete, patient, complete} = require('../services/doctorDashboard')
-const sendCancelationEmail = require('../services/mail.js')
+const {get,getAll,insert,deleteSlot,cancelAndDelete,patient,complete} = require("../services/doctorDashboard");
+const sendCancelationEmail = require("../services/mail.js");
 
-const getAvailabilities = async (req,res) => {
+const getAvailabilities = async (req, res) => {
+  const doctors_user_id = req?.user?.user_id;
+  const { selectedDate, pageNumber, slotsPerPage } = req.query;
+  if (!doctors_user_id) {
+    return res.status(400).send({ message: "Doctors Id is missing." });
+  }
+  try {
+    const availabilities = await get(doctors_user_id,selectedDate,pageNumber,slotsPerPage);
+    return res.status(200).send({ availabilities });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).send({ error: error.message });
+  }
+};
+const getAllAvailabilities = async (req,res) => {
     const doctors_user_id = req?.user?.user_id;
     if (!doctors_user_id) {
         return res.status(400).send({message : 'Doctors Id is missing.'})
@@ -95,4 +109,4 @@ const addAppointmentToComplete = async (req,res) => {
     }
 }
 
-module.exports = {getAvailabilities,addAvailability,deleteAvailability,cancelAppointmentAndRemoveAvailability,patientDetails,addAppointmentToComplete};
+module.exports = {getAvailabilities,addAvailability,deleteAvailability,cancelAppointmentAndRemoveAvailability,patientDetails,addAppointmentToComplete,getAllAvailabilities};
