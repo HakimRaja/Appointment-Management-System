@@ -1,4 +1,5 @@
 const {get, insert, deleteSlot, cancelAndDelete, patient, complete} = require('../services/doctorDashboard')
+const sendCancelationEmail = require('../services/mail.js')
 
 const getAvailabilities = async (req,res) => {
     const doctors_user_id = req?.user?.user_id;
@@ -52,8 +53,15 @@ const cancelAppointmentAndRemoveAvailability = async (req,res) => {
         return res.status(400).send({message : 'availability_id is missing.'});
     }
     try {
-        const result = await cancelAndDelete(availability_id);
-        return res.status(200).send({message : 'Success'})
+        const email = await cancelAndDelete(availability_id);
+        console.log(email);
+        const emailBody = `Hi ${email.name}!
+Your Appointment on ${email.date.toString().slice(0,15)} ${email.start_time}-${email.end_time} on AMS was cancelled by the relevant doctor. Please visit the dashboard again to book a new appointment.
+Regards
+Team AMS`;
+        sendCancelationEmail(email.email, "Appointment Cancellation", emailBody);
+        return res.status(200).send({message : 'Success'});
+        
     } catch (error) {
         console.log(error);
         return res.status(500).send({error:error.message});

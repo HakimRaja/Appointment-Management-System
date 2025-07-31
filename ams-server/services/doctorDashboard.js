@@ -64,6 +64,10 @@ const deleteSlot = async(availability_id) =>{
 const cancelAndDelete = async (availability_id) => {
     const transaction = await sequelize.transaction();
     try {
+        const patientEmail = await sequelize.query(`SELECT u.email,u.name,av.date,av.start_time,av.end_time        	FROM availabilities av            JOIN appointments ap ON av.availability_id = ap.availability_id AND ap."deletedAt" is null JOIN users u ON ap.user_id= u.user_id WHERE av.availability_id=:availability_id AND av."deletedAt" IS null`,{
+                replacements : {availability_id},
+                type : sequelize.QueryTypes.SELECT
+            })
         const cancelAppointment = await sequelize.query(`UPDATE appointments set status = :status,"updatedAt"=NOW() where availability_id=:availability_id and "deletedAt" IS NULL`,{
             replacements : {status : 'cancelled',availability_id},
             type : sequelize.QueryTypes.UPDATE,
@@ -75,7 +79,7 @@ const cancelAndDelete = async (availability_id) => {
             transaction
         })
         await transaction.commit();
-        return true;
+        return patientEmail[0];
     } catch (error) {
         await transaction.rollback()
         throw error;
