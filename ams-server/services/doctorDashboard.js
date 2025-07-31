@@ -1,9 +1,39 @@
 const sequelize = require("../config/dbConfig");
 const {v4 : uuidv4} = require('uuid');
 const getDate = require("../utils/doctorDashboard");
-const get = async (doctors_user_id) => {
+const get = async (doctors_user_id,selectedDate,pageNumber,slotsPerPage) => {
     try {
-        console.log(doctors_user_id);
+        const limit = slotsPerPage;
+        const offset = (pageNumber-1)*slotsPerPage;
+        const today = new Date().toISOString().split('T')[0];
+        let query;
+        if (selectedDate === today) {
+            query = `SELECT a.availability_id,a.start_time,a.end_time,a.date,a.is_booked,ap.user_id as patient_id,ap.status
+            FROM availabilities a
+            LEFT JOIN appointments ap ON a.availability_id = ap.availability_id AND ap."deletedAt" is NULL
+            WHERE a.user_id = :doctors_user_id AND (a.date::date =:selectedDate::date AND (a.date::time > NOW()::time OR ap.status IS NOT NULL)) AND a."deletedAt" IS NULL
+            ORDER BY a.start_time
+            LIMIT :limit OFFSET :offset`
+        } else {
+            query = `SELECT a.availability_id,a.start_time,a.end_time,a.date,a.is_booked,ap.user_id as patient_id,ap.status
+            FROM availabilities a
+            LEFT JOIN appointments ap ON a.availability_id = ap.availability_id AND ap."deletedAt" is NULL
+            WHERE a.user_id = :doctors_user_id AND a.date::date =:selectedDate::date AND a."deletedAt" IS NULL
+            ORDER BY a.start_time
+            LIMIT :limit OFFSET :offset`
+        }
+        const availabilities = await sequelize.query(query,{
+            replacements : {doctors_user_id,selectedDate,limit,offset},
+            type : sequelize.QueryTypes.SELECT
+        });
+        return availabilities;
+    } catch (error) {
+        throw error;
+    }
+}
+
+const getAll = async (doctors_user_id) => {
+    try {
         const availabilities = await sequelize.query(`SELECT a.availability_id,a.start_time,a.end_time,a.date,a.is_booked,ap.user_id as patient_id,ap.status
             FROM availabilities a
             LEFT JOIN appointments ap ON a.availability_id = ap.availability_id AND ap."deletedAt" is NULL
@@ -114,4 +144,4 @@ const complete = async (availability_id) => {
     }
 }
 
-module.exports = {get,insert,deleteSlot,cancelAndDelete,patient,complete}
+module.exports = {get,insert,deleteSlot,cancelAndDelete,patient,complete,getAll}
